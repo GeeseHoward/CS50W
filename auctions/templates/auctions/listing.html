@@ -1,0 +1,135 @@
+{% extends "auctions/layout.html" %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<h2>Listings: {{ listing.title }}</h2>
+  {% if user.is_authenticated %}
+      <p>
+        {% if user == listing.seller %}
+          {% if listing.is_active %}
+              <form action="{% url 'listings_view' listing_id=listing.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-dark" type="submit" name="close-listing">
+                  Close Listing
+                </button>
+              </form>
+          {% else %}
+            <p>Bidding closed. Winner: {{ listing.bids.last.bidder }}</p>
+          {% endif %}
+        {% else %}
+            {% if in_watchlist %}
+              <form action="{% url 'listings_view' listing_id=listing.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-dark" type="submit" name='remove-from-watchlist'>
+                  Remove From Watchlist
+                </button>
+              </form>
+            {% else %}
+              <form action="{% url 'listings_view' listing_id=listing.id %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-dark" type="submit" name='add-to-watchlist'>
+                  Add To Watchlist
+                </button>
+              </form>
+            {% endif %}
+          {% if listing.is_active %}
+          {% else %}
+            {% if listing.bids.last.bidder == user %}
+              <p>Bidding closed. You won the bid!</p>
+            {% else %}
+              <p>Bidding closed. Winner: {{ listing.bids.last.bidder }}</p>
+            {% endif %}
+          {% endif %}
+        {% endif %}
+       </p>
+  {% else %}
+      {% if listing.is_active %}
+      {% else %}
+          <p>Bidding closed. Winner: {{ listing.bids.last.bidder }}</p>
+      {% endif %}
+  {% endif %}
+    <div class="container">
+      <div class="row">
+        <div class="col listing">
+          {%if listing.image.first.image.url %}
+            <img class="center" src="{{ listing.image.first.image.url }}">
+          {% else %}
+            <img class="center" src="/media/images/no-image.png">
+          {% endif %}
+        </div>
+      </div>
+</div>
+<hr/>
+<h5><strong>Details</strong></h5>
+  <div>
+    <span>{{ listing.desc }}</span>
+  </div>
+  <div>
+    {% if max_bid %}
+      <h2>${{ max_bid.value }}</h2>
+    {% else %}
+      <h2>${{ listing.price }}</h2>
+    {% endif %}
+  </div>
+  <div>
+    <strong>Listed by</strong>: {{ listing.seller }}
+  </div>
+  <div>
+    {% if listing.is_cata or listing.is_catb or listing.is_catc %}
+      <span><strong>Categories:</strong>
+        <ul>
+          {% if listing.is_cata.all %}
+          <li>CatA</li>
+          {% endif %}
+          {% if listing.is_catb.all %}
+          <li>CatB</li>
+          {% endif %}
+          {% if listing.is_catc.all %}
+          <li>CatC</li>
+          {% endif %}
+        </ul>
+      </span>
+    {% endif %}
+  </div>
+{% if listing.is_active %}
+<hr/>
+<h5><strong>Bidding</strong></h5>
+  <div>
+    {{ listing.bids.count }} bids so far.
+    {% if max_bid.bidder == user %}
+      <span> Your bid is the current bid</span>
+    {% endif %}
+  </div>
+  {% if user != listing.seller %}
+    <div>
+      <form action="{% url 'listings_view' listing_id=listing.id %}" method="post">
+        {% csrf_token %}
+        {% if max_bid %}
+          <tr><th>{{ bid_form.bid.label_tag }}<td><input type="number" name="{{ bid_form.bid.name }}" required id="{{ bid_form.bid.id_for_label }}" min="{{ max_bid.value|add:'1' }}"></td></tr>
+        {% else %}
+          <tr><th>{{ bid_form.bid.label_tag }}<td><input type="number" name="{{ bid_form.bid.name }}" required id="{{ bid_form.bid.id_for_label }}" min="{{ listing.price|add:'1' }}"></td></tr>
+        {% endif %}
+        <input class="btn btn-primary" type="submit" name='bid-submit' value="Place Bid">
+      </form>
+    </div>
+  {% endif %}
+{% endif %}
+
+<hr/>
+<h5><strong>User Comments</strong></h5>
+{% if listing.comments.all %}
+  {% for comment in listing.comments.all %}
+      <p><strong>{{ comment.author }}</strong>: {{ comment.text }}</p>
+  {% endfor %}
+{% else %}
+  <p>No comments yet</p>
+{% endif %}
+
+<p>Add Your Comment</p>
+<form action="{% url 'listings_view' listing_id=listing.id %}" method="post">
+  {% csrf_token %}
+  {{ comment_form|crispy }}
+  <input class="btn btn-primary" type="submit" name='add-comment' value="Add Comment">
+</form>
+
+{% endblock %}

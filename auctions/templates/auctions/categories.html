@@ -1,0 +1,9 @@
+{% extends "auctions/listing_base.html" %}
+{% load crispy_forms_tags %}
+{% block pre_listings_block %}
+<form action="{% url 'categories_view' %}" method="post">
+  {% csrf_token %}
+  {{ select_category_form|crispy }}
+  <input class="btn btn-primary" type="submit" name='categories-search' value="Show Results">
+</form>
+{% endblock %}
